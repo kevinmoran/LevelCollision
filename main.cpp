@@ -189,49 +189,59 @@ int main(){
 		{
 			static int idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
-			update_navmesh_face(nav_mesh, player_pos, &idx);
+			find_face_below_pos(nav_mesh, player_pos, &idx);
 			vec3 curr_face_vp[3];
 			get_face(nav_mesh, idx, &curr_face_vp[0], &curr_face_vp[1], &curr_face_vp[2]);
 
-			draw_point(curr_face_vp[0]+vec3(0,0.5,0), 0.1, vec4(0.8,0,0,1));
-			draw_point(curr_face_vp[1]+vec3(0,0.5,0), 0.1, vec4(0.8,0,0,1));
-			draw_point(curr_face_vp[2]+vec3(0,0.5,0), 0.1, vec4(0.8,0,0,1));
+			//Get height of ground directly below player
+			float ground_y;
+			{
+				//Project everything onto xz for barycentric interp
+				vec3 a = vec3(curr_face_vp[0].x, 0, curr_face_vp[0].z);
+				vec3 b = vec3(curr_face_vp[1].x, 0, curr_face_vp[1].z);
+				vec3 c = vec3(curr_face_vp[2].x, 0, curr_face_vp[2].z);
 
-			vec3 a = vec3(curr_face_vp[0].x, 0, curr_face_vp[0].z);
-			vec3 b = vec3(curr_face_vp[1].x, 0, curr_face_vp[1].z);
-			vec3 c = vec3(curr_face_vp[2].x, 0, curr_face_vp[2].z);
+				float double_area_abc = length(cross(b-a, c-a));
+				vec3 player_xz = vec3(player_pos.x, 0, player_pos.z);
 
-			vec3 nav_tri_norm = cross(b-a, c-a);
-			float double_area_abc = length(nav_tri_norm);
-			nav_tri_norm = normalise(nav_tri_norm);
-			float d = dot(player_pos-a,nav_tri_norm);
-			vec3 proj = player_pos-(nav_tri_norm*d);
+				//Get barycentric coords u,v,w
+				float double_area_pbc = length(cross(b-player_xz, c-player_xz));
+				float double_area_pca = length(cross(c-player_xz, a-player_xz));
+				float double_area_pab = length(cross(a-player_xz, b-player_xz));
+				float u = double_area_pbc/double_area_abc;
+				float v = double_area_pca/double_area_abc;
+				float w = double_area_pab/double_area_abc;
 
-			//Get barycentric coords u,v,w
-			vec3 u_cross = cross(b-proj, c-proj);
-			vec3 v_cross = cross(c-proj, a-proj);
-			vec3 w_cross = cross(a-proj, b-proj);
-			float u = length(u_cross)/double_area_abc;
-			float v = length(v_cross)/double_area_abc;
-			float w = length(w_cross)/double_area_abc;
-
-			float ground_y = u*curr_face_vp[0].y +v*curr_face_vp[1].y + w*curr_face_vp[2].y;
-			// printf("%f\n", ground_y);
-
-			const float player_autosnap_height = 0.5f;
-			if(player_is_on_ground){
-				if(player_pos.y > ground_y) {
-					if(player_pos.y-ground_y<player_autosnap_height){
-						player_pos.y = ground_y;
-					}
-					else player_is_on_ground = false;
-				}
+				ground_y = u*curr_face_vp[0].y +v*curr_face_vp[1].y + w*curr_face_vp[2].y;
 			}
-			if(player_pos.y < ground_y) {
-				player_pos.y = ground_y;
-				player_vel.y = 0.0f;
-				player_is_on_ground = true;
-				player_is_jumping = false;
+
+			//Get minimum translation vector from ground to player (along ground norm)
+			vec3 ground_mtv;
+			{
+				vec3 ground_norm = normalise(cross(curr_face_vp[1]-curr_face_vp[0], curr_face_vp[2]-curr_face_vp[0]));
+				vec3 vec_to_player = player_pos-curr_face_vp[0];
+				ground_mtv = ground_norm * dot(vec_to_player,ground_norm);
+				draw_vec(player_pos-ground_mtv, ground_mtv, vec4(0.6,0.2,0.5,1));
+			}
+
+			//Check player collision with ground
+			{
+				const float player_autosnap_height = 0.25f;
+				if(player_is_on_ground){
+					if(player_pos.y > ground_y) {
+						if(player_pos.y-ground_y<player_autosnap_height){
+							player_pos.y = ground_y;
+						}
+						else player_is_on_ground = false;
+					}
+				}
+				if(player_pos.y < ground_y) {
+					//push player out of ground along normal
+					player_pos -= ground_mtv;
+					player_vel.y = 0.0f;
+					player_is_on_ground = true;
+					player_is_jumping = false;
+				}
 			}
 		}
 

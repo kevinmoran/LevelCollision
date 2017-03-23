@@ -122,7 +122,7 @@ vec3 get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c){
 
 //Find index of triangle on navmesh below pos
 //Uses previous result (index param) and connectivity info for speed!
-void update_navmesh_face(const NavMesh &n, vec3 pos, int* index){
+void find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
     assert(*index<n.num_faces);
     vec3 closest_face;
     {
