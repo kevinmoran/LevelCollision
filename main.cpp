@@ -162,7 +162,7 @@ int main(){
 
 		//Ctrl/Command-F to toggle fullscreen
 		//Note: window_resize_callback takes care of resizing viewport/recalculating P matrix
-/*		static bool F_was_pressed = false;
+		static bool F_was_pressed = false;
 		if(glfwGetKey(window, GLFW_KEY_F)) {
 			if(!F_was_pressed){
 				if(glfwGetKey(window, CTRL_KEY_LEFT) || glfwGetKey(window, CTRL_KEY_RIGHT)){
@@ -181,7 +181,7 @@ int main(){
 			F_was_pressed = true;
 		}
 		else F_was_pressed = false;
-*/
+
 		//Move player
 		if(!freecam_mode) player_update(dt);
 
