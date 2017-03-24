@@ -121,8 +121,9 @@ vec3 get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c){
 }
 
 //Find index of triangle on navmesh below pos
+//Returns true if there's ground below you, false if not
 //Uses previous result (index param) and connectivity info for speed!
-void find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
+bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
     assert(*index<n.num_faces);
     vec3 closest_face;
     {
@@ -130,7 +131,7 @@ void find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
         get_face(n, *index, &current_tri[0], &current_tri[1], &current_tri[2]);
         closest_face = get_vec_to_triangle(pos, current_tri[0], current_tri[1], current_tri[2]);
         float curr_dist2 = length2_xz(closest_face);
-        if(curr_dist2<0.00001) return;
+        if(curr_dist2<0.00001) return true;
     }
 
     for(int iterations=0; iterations<32; iterations++)
@@ -151,10 +152,11 @@ void find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
         if(length2_xz(closest_neighbour)<length2_xz(closest_face)){
             *index = closest_neighbour_idx;
             closest_face = closest_neighbour;
-            if(length2_xz(closest_neighbour)<0.00001) return;
+            if(length2_xz(closest_neighbour)<0.00001) return true;
         }
-        else return;
+        else return false;
     }
+    return false;
 }
 
 //Brute force check all triangles in navmesh, return closest one to pos

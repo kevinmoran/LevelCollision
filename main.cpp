@@ -189,7 +189,9 @@ int main(){
 		{
 			static int idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
-			find_face_below_pos(nav_mesh, player_pos, &idx);
+			if(!find_face_below_pos(nav_mesh, player_pos, &idx)){
+				player_is_on_ground = false;;
+			}
 			vec3 curr_face_vp[3];
 			get_face(nav_mesh, idx, &curr_face_vp[0], &curr_face_vp[1], &curr_face_vp[2]);
 
@@ -213,6 +215,8 @@ int main(){
 				float w = double_area_pab/double_area_abc;
 
 				ground_y = u*curr_face_vp[0].y +v*curr_face_vp[1].y + w*curr_face_vp[2].y;
+				const float bary_epsilon = 0.01f;
+				if(u+v+w > 1 + bary_epsilon) ground_y = player_pos.y - 1;
 			}
 
 			//Get minimum translation vector from ground to player (along ground norm)
