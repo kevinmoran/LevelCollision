@@ -243,6 +243,10 @@ int main(){
 					player_is_jumping = false;
 				}
 			}
+
+			if(player_pos.y<-20){
+				player_pos = vec3(0,1,0);
+			}
 		}
 
 		if(freecam_mode)g_camera.update_debug(dt);
