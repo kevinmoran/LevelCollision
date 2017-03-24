@@ -190,7 +190,6 @@ int main(){
 			static int idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
 			if(!find_face_below_pos(nav_mesh, player_pos, &idx)){
-				player_is_on_ground = false;
 			}
 			vec3 curr_face_vp[3];
 			get_face(nav_mesh, idx, &curr_face_vp[0], &curr_face_vp[1], &curr_face_vp[2]);
