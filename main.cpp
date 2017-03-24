@@ -185,22 +185,33 @@ int main(){
 		//Move player
 		if(!freecam_mode) player_update(dt);
 
-		//Do collision with ground
+		//Do collision with navmesh
 		{
-			static int idx = find_closest_face_SLOW(nav_mesh, player_pos);
+			static int nav_idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
-			if(!find_face_below_pos(nav_mesh, player_pos, &idx)){
-			}
-			vec3 curr_face_vp[3];
-			get_face(nav_mesh, idx, &curr_face_vp[0], &curr_face_vp[1], &curr_face_vp[2]);
+			find_face_below_pos(nav_mesh, player_pos, &nav_idx);
+
+			//Handle wall collision
+			// int wall_idx = find_wall(nav_mesh, player_pos, nav_idx);
+			// if(wall_idx>=0){
+			// 	vec3 wall_vp[3];
+			// 	get_face(nav_mesh, wall_idx, &wall_vp[0], &wall_vp[1], &wall_vp[2]);
+			// 	vec3 wall_norm = normalise(cross(wall_vp[1]-wall_vp[0], wall_vp[2]-wall_vp[0]));
+			// 	vec3 vec_to_wall = player_pos-wall_vp[0] * dot(player_pos-wall_vp[0], wall_norm);
+			// 	if(length(vec_to_wall)<player_scale.x){
+			// 		printf("HIT WALL\n");
+			// 	}
+			// }
 
 			//Get height of ground directly below player
+			vec3 ground_face_vp[3];
+			get_face(nav_mesh, nav_idx, &ground_face_vp[0], &ground_face_vp[1], &ground_face_vp[2]);
 			float ground_y;
 			{
 				//Project everything onto xz for barycentric interp
-				vec3 a = vec3(curr_face_vp[0].x, 0, curr_face_vp[0].z);
-				vec3 b = vec3(curr_face_vp[1].x, 0, curr_face_vp[1].z);
-				vec3 c = vec3(curr_face_vp[2].x, 0, curr_face_vp[2].z);
+				vec3 a = vec3(ground_face_vp[0].x, 0, ground_face_vp[0].z);
+				vec3 b = vec3(ground_face_vp[1].x, 0, ground_face_vp[1].z);
+				vec3 c = vec3(ground_face_vp[2].x, 0, ground_face_vp[2].z);
 
 				float double_area_abc = length(cross(b-a, c-a));
 				vec3 player_xz = vec3(player_pos.x, 0, player_pos.z);
@@ -213,7 +224,7 @@ int main(){
 				float v = double_area_pca/double_area_abc;
 				float w = double_area_pab/double_area_abc;
 
-				ground_y = u*curr_face_vp[0].y +v*curr_face_vp[1].y + w*curr_face_vp[2].y;
+				ground_y = u*ground_face_vp[0].y +v*ground_face_vp[1].y + w*ground_face_vp[2].y;
 				const float bary_epsilon = 0.01f;
 				if(u+v+w > 1 + bary_epsilon) ground_y = player_pos.y - 1;
 			}
@@ -221,8 +232,8 @@ int main(){
 			//Get minimum translation vector from ground to player (along ground norm)
 			vec3 ground_mtv;
 			{
-				vec3 ground_norm = normalise(cross(curr_face_vp[1]-curr_face_vp[0], curr_face_vp[2]-curr_face_vp[0]));
-				vec3 vec_to_player = player_pos-curr_face_vp[0];
+				vec3 ground_norm = normalise(cross(ground_face_vp[1]-ground_face_vp[0], ground_face_vp[2]-ground_face_vp[0]));
+				vec3 vec_to_player = player_pos-ground_face_vp[0];
 				ground_mtv = ground_norm * dot(vec_to_player,ground_norm);
 				draw_vec(player_pos-ground_mtv, ground_mtv, vec4(0.6,0.2,0.5,1));
 			}
