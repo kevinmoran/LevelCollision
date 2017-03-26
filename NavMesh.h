@@ -35,9 +35,9 @@ NavMesh init_navmesh(float* vp, uint16_t* indices, uint32_t vert_count, uint32_t
             int num_equal_verts = 0;
 
             for(int k=0; k<3; k++){
-                if(cmpf(n.faces[i].indices[0], n.faces[j].indices[k]) || 
-                   cmpf(n.faces[i].indices[1], n.faces[j].indices[k]) || 
-                   cmpf(n.faces[i].indices[2], n.faces[j].indices[k]) )
+                if((n.faces[i].indices[0]==n.faces[j].indices[k]) || 
+                   (n.faces[i].indices[1]==n.faces[j].indices[k]) || 
+                   (n.faces[i].indices[2]==n.faces[j].indices[k]) )
                 {
                     num_equal_verts+=1;
                 }
@@ -157,23 +157,6 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
         else return false;
     }
     return false;
-}
-
-int find_wall(const NavMesh &n, vec3 pos, int index){
-    assert(index<n.num_faces);
-
-    for(int i=0; i<n.faces[index].num_neighbours; i++)
-    {
-        uint16_t neigh_idx = n.faces[index].neighbours[i];
-        vec3 curr_tri[3];
-        get_face(n, neigh_idx, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-        vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
-        float ground_slope = RAD2DEG(acos(dot(ground_norm, vec3(0,1,0))));
-        if(ground_slope>player_max_stand_slope){
-            return i;
-        }
-    }
-    return -1;
 }
 
 //Brute force check all triangles in navmesh, return closest one to pos

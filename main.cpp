@@ -6,8 +6,8 @@
 #include <string.h>
 
 GLFWwindow* window = NULL;
-int gl_width = 400;
-int gl_height = 300;
+int gl_width = 1080;
+int gl_height = 720;
 float gl_aspect_ratio = (float)gl_width/gl_height;
 bool gl_fullscreen = false;
 
@@ -192,16 +192,43 @@ int main(){
 			find_face_below_pos(nav_mesh, player_pos, &nav_idx);
 
 			//Handle wall collision
-			// int wall_idx = find_wall(nav_mesh, player_pos, nav_idx);
-			// if(wall_idx>=0){
-			// 	vec3 wall_vp[3];
-			// 	get_face(nav_mesh, wall_idx, &wall_vp[0], &wall_vp[1], &wall_vp[2]);
-			// 	vec3 wall_norm = normalise(cross(wall_vp[1]-wall_vp[0], wall_vp[2]-wall_vp[0]));
-			// 	vec3 vec_to_wall = player_pos-wall_vp[0] * dot(player_pos-wall_vp[0], wall_norm);
-			// 	if(length(vec_to_wall)<player_scale.x){
-			// 		printf("HIT WALL\n");
-			// 	}
-			// }
+			{
+				uint16_t closest_wall_idx = -1;
+				float min_dist = 999;
+
+				//Check if any neighbouring navmesh faces are walls (steep-sloped)
+				//Store the one that's closest to the player
+				for(int i=0; i<nav_mesh.faces[nav_idx].num_neighbours; i++)
+				{
+					uint16_t neigh_idx = nav_mesh.faces[nav_idx].neighbours[i];
+					vec3 curr_tri[3];
+					get_face(nav_mesh, neigh_idx, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
+					vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
+					float ground_slope = acos(dot(ground_norm, vec3(0,1,0)));
+					if(ground_slope>DEG2RAD(60)){ //it is a wall
+						vec3 v = get_vec_to_triangle(player_pos, curr_tri[0], curr_tri[1], curr_tri[2]);
+						float d = length2(v);
+						if(d < min_dist){
+							min_dist = d;
+							closest_wall_idx = neigh_idx;
+						}
+					}
+				}
+
+				if(closest_wall_idx<nav_mesh.num_faces){//we are close to a wall
+					vec3 wall[3];
+					get_face(nav_mesh, closest_wall_idx, &wall[0], &wall[1], &wall[2]);
+					draw_point(wall[0], 0.3f, vec4(0.1,0.7,0.2,1));
+					draw_point(wall[1], 0.3f, vec4(0.1,0.7,0.2,1));
+					draw_point(wall[2], 0.3f, vec4(0.1,0.7,0.2,1));
+					vec3 wall_norm = normalise(cross(wall[1]-wall[0], wall[2]-wall[0]));
+					
+					//Check player collision with wall
+					{
+
+					}
+				}
+			}
 
 			//Get height of ground directly below player
 			vec3 ground_face_vp[3];
