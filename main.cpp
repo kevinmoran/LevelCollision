@@ -6,8 +6,8 @@
 #include <string.h>
 
 GLFWwindow* window = NULL;
-int gl_width = 1080;
-int gl_height = 720;
+int gl_width = 400;
+int gl_height = 300;
 float gl_aspect_ratio = (float)gl_width/gl_height;
 bool gl_fullscreen = false;
 
@@ -26,6 +26,8 @@ int main(){
 
 	//Load cube mesh
 	GLuint cube_vao;
+	float* cube_vp;
+	int cube_num_verts;
 	unsigned int cube_num_indices = 0;
 	{
 		float* vp = NULL;
@@ -44,7 +46,9 @@ int main(){
 		glBufferData(GL_ARRAY_BUFFER, num_verts*3*sizeof(float), vp, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(VP_ATTRIB_LOC);
 		glVertexAttribPointer(VP_ATTRIB_LOC, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-		free(vp);
+		// free(vp);
+		cube_vp = vp;
+		cube_num_verts = num_verts;
 
 		free(vt);
 
@@ -214,27 +218,44 @@ int main(){
 						}
 					}
 				}
-
 				if(closest_wall_idx<nav_mesh.num_faces){//we are close to a wall
 					vec3 wall[3];
 					get_face(nav_mesh, closest_wall_idx, &wall[0], &wall[1], &wall[2]);
-					draw_point(wall[0], 0.3f, vec4(0.1,0.7,0.2,1));
-					draw_point(wall[1], 0.3f, vec4(0.1,0.7,0.2,1));
-					draw_point(wall[2], 0.3f, vec4(0.1,0.7,0.2,1));
+					// draw_point(wall[0], 0.3f, vec4(0.1,0.7,0.2,1));
+					// draw_point(wall[1], 0.3f, vec4(0.1,0.7,0.2,1));
+					// draw_point(wall[2], 0.3f, vec4(0.1,0.7,0.2,1));
 					vec3 wall_norm = normalise(cross(wall[1]-wall[0], wall[2]-wall[0]));
 					
 					//Check player collision with wall
-					{
-
+					//Dumb mode engage: Just plane-test all bounding box points with wall face, YOLO
+					vec3 wall_mtv = vec3(999,999,999);
+					bool hit_wall = false;
+					for(int i=0; i<cube_num_verts; i++){
+						vec3 point = player_M*vec4(cube_vp[3*i], cube_vp[3*i+1], cube_vp[3*i+2], 1);
+						float d = dot(point-wall[0], wall_norm);
+						if(d<0){
+							hit_wall = true;
+							vec3 resolve_vec = wall_norm*(-d);
+							if(length2(resolve_vec)<length2(wall_mtv)) 
+								wall_mtv = resolve_vec;
+							break;
+						}
+					}
+					if(hit_wall){
+						player_pos += wall_mtv;
+						float speed = length(player_vel);
+						player_vel += wall_mtv;
+						player_vel = normalise(player_vel)*speed;
 					}
 				}
 			}
 
-			//Get height of ground directly below player
+			//Get navmesh face and height of ground directly beneath player
 			vec3 ground_face_vp[3];
-			get_face(nav_mesh, nav_idx, &ground_face_vp[0], &ground_face_vp[1], &ground_face_vp[2]);
 			float ground_y;
 			{
+				get_face(nav_mesh, nav_idx, &ground_face_vp[0], &ground_face_vp[1], &ground_face_vp[2]);
+
 				//Project everything onto xz for barycentric interp
 				vec3 a = vec3(ground_face_vp[0].x, 0, ground_face_vp[0].z);
 				vec3 b = vec3(ground_face_vp[1].x, 0, ground_face_vp[1].z);
@@ -285,7 +306,7 @@ int main(){
 				}
 			}
 
-			if(player_pos.y<-20){
+			if(player_pos.y<-20){ //fall off world check
 				player_pos = vec3(0,1,0);
 			}
 		}
