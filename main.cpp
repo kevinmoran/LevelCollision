@@ -135,7 +135,7 @@ int main(){
 		curr_time = glfwGetTime();
 		dt = curr_time - prev_time;
 		if(dt > 0.1) dt = 0.1;
-
+		
 		//Get Input
 		g_mouse.prev_xpos = g_mouse.xpos;
     	g_mouse.prev_ypos = g_mouse.ypos;
@@ -228,25 +228,21 @@ int main(){
 					
 					//Check player collision with wall
 					//Dumb mode engage: Just plane-test all bounding box points with wall face, YOLO
-					vec3 wall_mtv = vec3(999,999,999);
-					bool hit_wall = false;
+					vec3 wall_resolution_vec = vec3(0,0,0);
 					for(int i=0; i<cube_num_verts; i++){
 						vec3 point = player_M*vec4(cube_vp[3*i], cube_vp[3*i+1], cube_vp[3*i+2], 1);
 						float d = dot(point-wall[0], wall_norm);
 						if(d<0){
-							hit_wall = true;
 							vec3 resolve_vec = wall_norm*(-d);
-							if(length2(resolve_vec)<length2(wall_mtv)) 
-								wall_mtv = resolve_vec;
+							if(length2(resolve_vec)>length2(wall_resolution_vec)) 
+								wall_resolution_vec = resolve_vec;
 							break;
 						}
 					}
-					if(hit_wall){
-						player_pos += wall_mtv;
-						float speed = length(player_vel);
-						player_vel += wall_mtv;
-						player_vel = normalise(player_vel)*speed;
-					}
+					player_pos += wall_resolution_vec;
+					float speed = length(player_vel);
+					player_vel += wall_resolution_vec;
+					player_vel = normalise(player_vel)*speed;
 				}
 			}
 
