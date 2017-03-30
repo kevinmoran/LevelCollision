@@ -133,7 +133,7 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
     {
         vec3 curr_tri[3];
         get_face(n, *index, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-        if(get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &closest_face)) return true;
+        get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &closest_face);
     }
 
     for(int iterations=0; iterations<32; iterations++)
