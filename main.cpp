@@ -109,8 +109,8 @@ int main(){
 
 	//Player collision mesh
 	Capsule player_collider;
-	player_collider.r = 1;
-	player_collider.y_base = 1;
+	player_collider.r = 1; 		//NB: these are the dimensions of the collider mesh (capsule.obj),
+	player_collider.y_base = 1; //they will be scaled using the player's model matrix!
 	player_collider.y_cap = 2;
 	player_collider.pos = player_pos;
 	player_collider.matRS = player_M;
@@ -206,7 +206,7 @@ int main(){
 
 			//Handle wall collision
 			{
-				uint16_t closest_wall_idx = -1;
+				uint16_t closest_wall_idx = nav_mesh.num_faces; //invalid index to check if we didn't find a wall
 				float min_dist = 999;
 
 				//Check if any neighbouring navmesh faces are walls (steep-sloped)
