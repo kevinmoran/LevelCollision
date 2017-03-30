@@ -72,8 +72,9 @@ void get_face(const NavMesh &n, int index, vec3* p0, vec3* p1, vec3* p2){
     *p2 = vec3(n.verts[3*idx2], n.verts[3*idx2+1], n.verts[3*idx2+2]);
 }
 
-//Returns vector from point p to closest point on triangle abc
-vec3 get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c){
+//Returns vector result from point p to closest point on triangle abc
+//Returns a bool if p's projection onto the abc's plane lies within the triangle
+bool get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c, vec3* result){
     vec3 norm = cross(b-a, c-a);
     float double_area_abc = length(norm);
     norm = normalise(norm);
@@ -93,31 +94,34 @@ vec3 get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c){
 
     if(u>0 && v>0 && w>0){//inside triangle
         // draw_vec(proj, p-proj+vec3(0,0,0.1), vec4(0,0.8,0,1));
-        return p-proj;
+        *result = p-proj;
+        return true;
     }
     if(u<0){ //In front of bc
         float len_cb = length(c-b);
         float dot_factor = dot(proj-b, (c-b)/len_cb)/len_cb;
         dot_factor = CLAMP(dot_factor,0,1);
         // draw_vec(b+(c-b)*dot_factor, p-(b+(c-b)*dot_factor)+vec3(0,0,0.1), vec4(0,0.8,0,1));
-        return p-(b+(c-b)*dot_factor);
+        *result = p-(b+(c-b)*dot_factor);
+        return false;
     }
     if(v<0){ //In front of ac
         float len_ca = length(c-a);
         float dot_factor = dot(proj-a, (c-a)/len_ca)/len_ca;
         dot_factor = CLAMP(dot_factor,0,1);
         // draw_vec(a+(c-a)*dot_factor, p-(a+(c-a)*dot_factor)+vec3(0,0,0.1), vec4(0,0.8,0,1));
-        return p-(a+(c-a)*dot_factor);
+        *result = p-(a+(c-a)*dot_factor);
+        return false;
     }
     if(w<0){ //In front of ab
         float len_ba = length(b-a);
         float dot_factor = dot(proj-a, (b-a)/len_ba)/len_ba;
         dot_factor = CLAMP(dot_factor,0,1);
         // draw_vec(a+(b-a)*dot_factor, p-(a+(b-a)*dot_factor)+vec3(0,0,0.1), vec4(0,0.8,0,1));
-        return p-(a+(b-a)*dot_factor);
+        *result = p-(a+(b-a)*dot_factor);
+        return false;
     }
-    assert(false);
-    return vec3(INFINITY,INFINITY,INFINITY);
+    return false;
 }
 
 //Find index of triangle on navmesh below pos
@@ -129,9 +133,7 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
     {
         vec3 curr_tri[3];
         get_face(n, *index, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-        closest_face = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
-        float curr_dist2 = length2_xz(closest_face);
-        if(curr_dist2<0.00001) return true;
+        if(get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &closest_face)) return true;
     }
 
     for(int iterations=0; iterations<32; iterations++)
@@ -151,7 +153,8 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
             if(ground_slope>DEG2RAD(60)){ //too steep to stand on
                 continue;
             }
-            vec3 v = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
+            vec3 v;
+            get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &v);
             if(length2_xz(v) < length2_xz(closest_neighbour)){
                 closest_neighbour = v;
                 closest_neighbour_idx = neigh_idx;
@@ -174,7 +177,8 @@ int find_closest_face_SLOW(const NavMesh &n, vec3 pos){
     for(int i=0; i< n.num_faces; i++){
         vec3 curr_tri[3];
         get_face(n, i, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-        vec3 v = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
+        vec3 v;
+        get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &v);
         float d = length2(v);
         if(d < min_dist){
             min_dist = d;

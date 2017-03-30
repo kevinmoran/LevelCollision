@@ -219,8 +219,14 @@ int main(){
 					vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
 					float ground_slope = acos(dot(ground_norm, vec3(0,1,0)));
 					if(ground_slope>DEG2RAD(60)){ //it is a wall
-						vec3 v = get_vec_to_triangle(player_pos, curr_tri[0], curr_tri[1], curr_tri[2]);
-						float d = length2(v);
+						//Check player is in line with the wall
+						vec3 v1, v2;
+						vec3 player_head = player_pos+vec3(0,player_collider.y_cap*player_scale.y,0);
+						//If player head point or toe point don't lie within the wall triangle when projected
+						//onto that plane, we won't collide with it
+						if(!get_vec_to_triangle(player_pos, curr_tri[0], curr_tri[1], curr_tri[2], &v1) && 
+						   !get_vec_to_triangle(player_head, curr_tri[0], curr_tri[1], curr_tri[2], &v2)) continue;
+						float d = MIN(length2(v1), length2(v2));
 						if(d < min_dist){
 							min_dist = d;
 							closest_wall_idx = neigh_idx;
@@ -254,6 +260,9 @@ int main(){
 			float ground_y;
 			{
 				get_face(nav_mesh, nav_idx, &ground_face_vp[0], &ground_face_vp[1], &ground_face_vp[2]);
+				// draw_point(ground_face_vp[0], 0.3f, vec4(0.1,0.7,0.2,1));
+				// draw_point(ground_face_vp[1], 0.3f, vec4(0.1,0.7,0.2,1));
+				// draw_point(ground_face_vp[2], 0.3f, vec4(0.1,0.7,0.2,1));
 
 				//Project everything onto xz for barycentric interp
 				vec3 a = vec3(ground_face_vp[0].x, 0, ground_face_vp[0].z);
