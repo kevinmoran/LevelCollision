@@ -127,9 +127,9 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
     assert(*index<n.num_faces);
     vec3 closest_face;
     {
-        vec3 current_tri[3];
-        get_face(n, *index, &current_tri[0], &current_tri[1], &current_tri[2]);
-        closest_face = get_vec_to_triangle(pos, current_tri[0], current_tri[1], current_tri[2]);
+        vec3 curr_tri[3];
+        get_face(n, *index, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
+        closest_face = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
         float curr_dist2 = length2_xz(closest_face);
         if(curr_dist2<0.00001) return true;
     }
@@ -141,9 +141,17 @@ bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
 		for(int i=0; i<n.faces[*index].num_neighbours; i++)
         {
             uint16_t neigh_idx = n.faces[*index].neighbours[i];
-            vec3 current_tri[3];
-            get_face(n, neigh_idx, &current_tri[0], &current_tri[1], &current_tri[2]);
-            vec3 v = get_vec_to_triangle(pos, current_tri[0], current_tri[1], current_tri[2]);
+            vec3 curr_tri[3];
+            get_face(n, neigh_idx, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
+    
+            //Wall check
+            vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
+            float ground_slope = acos(dot(ground_norm, vec3(0,1,0)));
+            //TODO: Remove hardcoded max_slope angle
+            if(ground_slope>DEG2RAD(60)){ //too steep to stand on
+                continue;
+            }
+            vec3 v = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
             if(length2_xz(v) < length2_xz(closest_neighbour)){
                 closest_neighbour = v;
                 closest_neighbour_idx = neigh_idx;
@@ -164,9 +172,9 @@ int find_closest_face_SLOW(const NavMesh &n, vec3 pos){
     float min_dist = 999;
     int closest_face = -1;
     for(int i=0; i< n.num_faces; i++){
-        vec3 current_tri[3];
-        get_face(n, i, &current_tri[0], &current_tri[1], &current_tri[2]);
-        vec3 v = get_vec_to_triangle(pos, current_tri[0], current_tri[1], current_tri[2]);
+        vec3 curr_tri[3];
+        get_face(n, i, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
+        vec3 v = get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2]);
         float d = length2(v);
         if(d < min_dist){
             min_dist = d;

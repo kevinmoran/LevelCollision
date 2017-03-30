@@ -34,7 +34,7 @@ int main(){
 		float* vt = NULL;
 		uint16_t* indices = NULL;
 		unsigned int num_verts = 0;
-		load_obj_indexed("capsule.obj", &vp, &vt, &vn, &indices, &num_verts, &player_num_indices, false);
+		load_obj_indexed("capsule.obj", &vp, &vt, &vn, &indices, &num_verts, &player_num_indices);
 
 		glGenVertexArrays(1, &player_vao);
 		glBindVertexArray(player_vao);
@@ -272,7 +272,7 @@ int main(){
 				float w = double_area_pab/double_area_abc;
 
 				ground_y = u*ground_face_vp[0].y +v*ground_face_vp[1].y + w*ground_face_vp[2].y;
-				const float bary_epsilon = 0.01f;
+				const float bary_epsilon = 0.1f;
 				if(u+v+w > 1 + bary_epsilon) ground_y = player_pos.y - 1;
 			}
 
