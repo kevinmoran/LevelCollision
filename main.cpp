@@ -20,25 +20,24 @@ bool gl_fullscreen = false;
 #include "DebugDrawing.h"
 #include "Player.h"
 #include "NavMesh.h"
+#include "Collider.h"
 
 int main(){
 	if(!init_gl(window, "Navmesh", gl_width, gl_height)){ return 1; }
 
-	//Load cube mesh
-	GLuint cube_vao;
-	float* cube_vp;
-	int cube_num_verts;
-	unsigned int cube_num_indices = 0;
+	//Load player mesh
+	GLuint player_vao;
+	unsigned int player_num_indices = 0;
 	{
 		float* vp = NULL;
 		float* vn = NULL;
 		float* vt = NULL;
 		uint16_t* indices = NULL;
 		unsigned int num_verts = 0;
-		load_obj_indexed("cube.obj", &vp, &vt, &vn, &indices, &num_verts, &cube_num_indices, false);
+		load_obj_indexed("capsule.obj", &vp, &vt, &vn, &indices, &num_verts, &player_num_indices, false);
 
-		glGenVertexArrays(1, &cube_vao);
-		glBindVertexArray(cube_vao);
+		glGenVertexArrays(1, &player_vao);
+		glBindVertexArray(player_vao);
 		
 		GLuint points_vbo;
 		glGenBuffers(1, &points_vbo);
@@ -46,9 +45,7 @@ int main(){
 		glBufferData(GL_ARRAY_BUFFER, num_verts*3*sizeof(float), vp, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(VP_ATTRIB_LOC);
 		glVertexAttribPointer(VP_ATTRIB_LOC, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-		// free(vp);
-		cube_vp = vp;
-		cube_num_verts = num_verts;
+		free(vp);
 
 		free(vt);
 
@@ -63,7 +60,7 @@ int main(){
 		GLuint index_vbo;
 		glGenBuffers(1, &index_vbo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube_num_indices*sizeof(unsigned short), indices, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, player_num_indices*sizeof(unsigned short), indices, GL_STATIC_DRAW);
 		free(indices);
 	}
 
@@ -109,6 +106,15 @@ int main(){
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, ground_num_indices*sizeof(unsigned short), indices, GL_STATIC_DRAW);
 		free(indices);
 	}
+
+	//Player collision mesh
+	Capsule player_collider;
+	player_collider.r = 1;
+	player_collider.y_base = 1;
+	player_collider.y_cap = 2;
+	player_collider.pos = player_pos;
+	player_collider.matRS = player_M;
+	player_collider.matRS_inverse = inverse(player_M);
 
     g_camera.init(vec3(0,2,35), vec3(0,-5,0));
 
@@ -188,6 +194,9 @@ int main(){
 
 		//Move player
 		if(!freecam_mode) player_update(dt);
+		player_collider.pos= player_pos;
+		player_collider.matRS = player_M;
+		player_collider.matRS_inverse = inverse(player_M);
 
 		//Do collision with navmesh
 		{
@@ -227,22 +236,16 @@ int main(){
 					vec3 wall_norm = normalise(cross(wall[1]-wall[0], wall[2]-wall[0]));
 					
 					//Check player collision with wall
-					//Dumb mode engage: Just plane-test all bounding box points with wall face, YOLO
+					//Simple collision check with a capsule
 					vec3 wall_resolution_vec = vec3(0,0,0);
-					for(int i=0; i<cube_num_verts; i++){
-						vec3 point = player_M*vec4(cube_vp[3*i], cube_vp[3*i+1], cube_vp[3*i+2], 1);
-						float d = dot(point-wall[0], wall_norm);
-						if(d<0){
-							vec3 resolve_vec = wall_norm*(-d);
-							if(length2(resolve_vec)>length2(wall_resolution_vec)) 
-								wall_resolution_vec = resolve_vec;
-							break;
-						}
+					vec3 support_point = player_collider.support(-wall_norm);
+					float d = dot(support_point-wall[0], wall_norm);
+					if(d<0){
+						vec3 resolve_vec = wall_norm*(-d);
+						if(length2(resolve_vec)>length2(wall_resolution_vec)) 
+							wall_resolution_vec = resolve_vec;
 					}
 					player_pos += wall_resolution_vec;
-					float speed = length(player_vel);
-					player_vel += wall_resolution_vec;
-					player_vel = normalise(player_vel)*speed;
 				}
 			}
 
@@ -306,6 +309,7 @@ int main(){
 				player_pos = vec3(0,1,0);
 			}
 		}
+		player_M = translate(scale(identity_mat4(), player_scale), player_pos);
 
 		if(freecam_mode)g_camera.update_debug(dt);
 		else g_camera.update_player(player_pos, dt);
@@ -315,10 +319,10 @@ int main(){
 		glUniformMatrix4fv(basic_shader.P_loc, 1, GL_FALSE, g_camera.P.m);
 
 		//Draw player
-		glBindVertexArray(cube_vao);
+		glBindVertexArray(player_vao);
 		glUniform4fv(colour_loc, 1, player_colour.v);
 		glUniformMatrix4fv(basic_shader.M_loc, 1, GL_FALSE, player_M.m);
-        glDrawElements(GL_TRIANGLES, cube_num_indices, GL_UNSIGNED_SHORT, 0);
+        glDrawElements(GL_TRIANGLES, player_num_indices, GL_UNSIGNED_SHORT, 0);
 
 		//Draw ground
 		glBindVertexArray(ground_vao);
