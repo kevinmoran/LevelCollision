@@ -245,8 +245,10 @@ int main(){
 					//Simple collision check with a capsule
 					vec3 wall_resolution_vec = vec3(0,0,0);
 					vec3 support_point = player_collider.support(-wall_norm);
+					vec3 support_point2 = player_collider.support(wall_norm);
 					float d = dot(support_point-wall[0], wall_norm);
-					if(d<0){
+					float d2 = dot(support_point2-wall[0], wall_norm);
+					if(d<0 && d2>0){
 						vec3 resolve_vec = wall_norm*(-d);
 						if(length2(resolve_vec)>length2(wall_resolution_vec)) 
 							wall_resolution_vec = resolve_vec;
