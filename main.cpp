@@ -19,8 +19,8 @@ bool gl_fullscreen = false;
 #include "Shader.h"
 #include "DebugDrawing.h"
 #include "Player.h"
-#include "NavMesh.h"
 #include "Collider.h"
+#include "NavMesh.h"
 
 int main(){
 	if(!init_gl(window, "Navmesh", gl_width, gl_height)){ return 1; }
@@ -109,12 +109,14 @@ int main(){
 
 	//Player collision mesh
 	Capsule player_collider;
-	player_collider.r = 1; 		//NB: these are the dimensions of the collider mesh (capsule.obj),
-	player_collider.y_base = 1; //they will be scaled using the player's model matrix!
-	player_collider.y_cap = 2;
-	player_collider.pos = player_pos;
-	player_collider.matRS = player_M;
-	player_collider.matRS_inverse = inverse(player_M);
+	{
+		player_collider.r = 1; 		//NB: these are the dimensions of the collider mesh (capsule.obj),
+		player_collider.y_base = 1; //they will be scaled using the player's model matrix!
+		player_collider.y_cap = 2;
+		player_collider.pos = player_pos;
+		player_collider.matRS = player_M;
+		player_collider.matRS_inverse = inverse(player_M);
+	}
 
     g_camera.init(vec3(0,2,35), vec3(0,-5,0));
 
@@ -123,9 +125,6 @@ int main(){
     //Load shaders
 	Shader basic_shader = init_shader("MVP.vert", "uniform_colour_sunlight.frag");
 	GLuint colour_loc = glGetUniformLocation(basic_shader.id, "colour");
-	glUseProgram(basic_shader.id);
-	glUniformMatrix4fv(basic_shader.V_loc, 1, GL_FALSE, g_camera.V.m);
-	glUniformMatrix4fv(basic_shader.P_loc, 1, GL_FALSE, g_camera.P.m);
 
 	check_gl_error();
 
@@ -147,50 +146,52 @@ int main(){
     	g_mouse.prev_ypos = g_mouse.ypos;
 		glfwPollEvents();
 		
-		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-			glfwSetWindowShouldClose(window, 1);
-			continue;
-		}
-
-		//Tab to toggle player_cam/freecam
+		//Check button presses
 		static bool freecam_mode = true;
-		static bool tab_was_pressed = false;
-		if(glfwGetKey(window, GLFW_KEY_TAB)) {
-			if(!tab_was_pressed) { freecam_mode = !freecam_mode; }
-			tab_was_pressed = true;
-		}
-		else tab_was_pressed = false;
-
-		//Slash to toggle ground wireframe
 		static bool draw_wireframe = true;
-		static bool slash_was_pressed = false;
-		if(glfwGetKey(window, GLFW_KEY_SLASH)) {
-			if(!slash_was_pressed) { draw_wireframe = !draw_wireframe; }
-			slash_was_pressed = true;
-		}
-		else slash_was_pressed = false;
-
-		//Ctrl/Command-F to toggle fullscreen
-		//Note: window_resize_callback takes care of resizing viewport/recalculating P matrix
-		static bool F_was_pressed = false;
-		if(glfwGetKey(window, GLFW_KEY_F)) {
-			if(!F_was_pressed){
-				if(glfwGetKey(window, CTRL_KEY_LEFT) || glfwGetKey(window, CTRL_KEY_RIGHT)){
-					gl_fullscreen = !gl_fullscreen;
-					static int old_win_x, old_win_y, old_win_w, old_win_h;
-					if(gl_fullscreen){
-						glfwGetWindowPos(window, &old_win_x, &old_win_y);
-						glfwGetWindowSize(window, &old_win_w, &old_win_h);
-						GLFWmonitor* mon = glfwGetPrimaryMonitor();
-						const GLFWvidmode* vidMode = glfwGetVideoMode(mon);
-						glfwSetWindowMonitor(window, mon, 0, 0, vidMode->width, vidMode->height, vidMode->refreshRate);
-					}
-					else glfwSetWindowMonitor(window, NULL, old_win_x, old_win_y, old_win_w, old_win_h, GLFW_DONT_CARE);
-				}
+		{
+			if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+				glfwSetWindowShouldClose(window, 1);
 			}
-			F_was_pressed = true;
+
+			//Tab to toggle player_cam/freecam
+			static bool tab_was_pressed = false;
+			if(glfwGetKey(window, GLFW_KEY_TAB)) {
+				if(!tab_was_pressed) { freecam_mode = !freecam_mode; }
+				tab_was_pressed = true;
+			}
+			else tab_was_pressed = false;
+
+			//Slash to toggle ground wireframe
+			static bool slash_was_pressed = false;
+			if(glfwGetKey(window, GLFW_KEY_SLASH)) {
+				if(!slash_was_pressed) { draw_wireframe = !draw_wireframe; }
+				slash_was_pressed = true;
+			}
+			else slash_was_pressed = false;
+
+			//Ctrl/Command-F to toggle fullscreen
+			//Note: window_resize_callback takes care of resizing viewport/recalculating P matrix
+			static bool F_was_pressed = false;
+			if(glfwGetKey(window, GLFW_KEY_F)) {
+				if(!F_was_pressed){
+					if(glfwGetKey(window, CTRL_KEY_LEFT) || glfwGetKey(window, CTRL_KEY_RIGHT)){
+						gl_fullscreen = !gl_fullscreen;
+						static int old_win_x, old_win_y, old_win_w, old_win_h;
+						if(gl_fullscreen){
+							glfwGetWindowPos(window, &old_win_x, &old_win_y);
+							glfwGetWindowSize(window, &old_win_w, &old_win_h);
+							GLFWmonitor* mon = glfwGetPrimaryMonitor();
+							const GLFWvidmode* vidMode = glfwGetVideoMode(mon);
+							glfwSetWindowMonitor(window, mon, 0, 0, vidMode->width, vidMode->height, vidMode->refreshRate);
+						}
+						else glfwSetWindowMonitor(window, NULL, old_win_x, old_win_y, old_win_w, old_win_h, GLFW_DONT_CARE);
+					}
+				}
+				F_was_pressed = true;
+			}
+			else F_was_pressed = false;
 		}
-		else F_was_pressed = false;
 
 		//Move player
 		if(!freecam_mode) player_update(dt);
@@ -200,126 +201,67 @@ int main(){
 
 		//Do collision with navmesh
 		{
-			static int nav_idx = find_closest_face_SLOW(nav_mesh, player_pos);
+			static int closest_face_idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
-			find_face_below_pos(nav_mesh, player_pos, &nav_idx);
+			//Broad phase
+			//Get a subset of nav faces to check for collision with player based on distance
+			find_closest_face(nav_mesh, player_pos, &closest_face_idx);
 
-			//Handle wall collision
+			//Narrow phase
+			//Check collision between player and all candidate faces
 			{
-				uint16_t closest_wall_idx = nav_mesh.num_faces; //invalid index to check if we didn't find a wall
-				float min_dist = 999;
+				int num_neighbours = nav_mesh.faces[closest_face_idx].num_neighbours;
+				bool hit_ground = false;
+				for(int i=-1; i<num_neighbours; i++){
+					//Get current face
+					vec3 nav_face_a, nav_face_b, nav_face_c;
+					{
+						int nav_idx;
+						if(i<0) nav_idx = closest_face_idx; //ugly but whatever
+						else nav_idx = nav_mesh.faces[closest_face_idx].neighbours[i];
+						get_face(nav_mesh, nav_idx, &nav_face_a, &nav_face_b, &nav_face_c);
+					}
 
-				//Check if any neighbouring navmesh faces are walls (steep-sloped)
-				//Store the one that's closest to the player
-				for(int i=0; i<nav_mesh.faces[nav_idx].num_neighbours; i++)
-				{
-					uint16_t neigh_idx = nav_mesh.faces[nav_idx].neighbours[i];
-					vec3 curr_tri[3];
-					get_face(nav_mesh, neigh_idx, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-					vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
-					float ground_slope = acos(dot(ground_norm, vec3(0,1,0)));
-					if(ground_slope>DEG2RAD(60)){ //it is a wall
-						//Check player is in line with the wall
-						vec3 v1, v2;
-						vec3 player_head = player_pos+vec3(0,player_collider.y_cap*player_scale.y,0);
-						//If player head point or toe point don't lie within the wall triangle when projected
-						//onto that plane, we won't collide with it
-						if(!get_vec_to_triangle(player_pos, curr_tri[0], curr_tri[1], curr_tri[2], &v1) && 
-						   !get_vec_to_triangle(player_head, curr_tri[0], curr_tri[1], curr_tri[2], &v2)) continue;
-						float d = MIN(length2(v1), length2(v2));
-						if(d < min_dist){
-							min_dist = d;
-							closest_wall_idx = neigh_idx;
+					//Check player collision with current face
+					{
+						vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
+						vec3 support_point = player_collider.support(-nav_face_norm);
+						float d = dot(support_point-nav_face_a,nav_face_norm);
+						vec3 vec_to_ground = nav_face_norm*(d);
+
+						bool face_is_ground = true; //to distinguish between wall and ground collisions
+						{
+							float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
+							if(face_slope>player_max_stand_slope) face_is_ground = false;
 						}
-					}
-				}
-				if(closest_wall_idx<nav_mesh.num_faces){//we are close to a wall
-					vec3 wall[3];
-					get_face(nav_mesh, closest_wall_idx, &wall[0], &wall[1], &wall[2]);
-					// draw_point(wall[0], 0.3f, vec4(0.1,0.7,0.2,1));
-					// draw_point(wall[1], 0.3f, vec4(0.1,0.7,0.2,1));
-					// draw_point(wall[2], 0.3f, vec4(0.1,0.7,0.2,1));
-					vec3 wall_norm = normalise(cross(wall[1]-wall[0], wall[2]-wall[0]));
-					
-					//Check player collision with wall
-					//Simple collision check with a capsule
-					vec3 wall_resolution_vec = vec3(0,0,0);
-					vec3 support_point = player_collider.support(-wall_norm);
-					vec3 support_point2 = player_collider.support(wall_norm);
-					float d = dot(support_point-wall[0], wall_norm);
-					float d2 = dot(support_point2-wall[0], wall_norm);
-					if(d<0 && d2>0){
-						vec3 resolve_vec = wall_norm*(-d);
-						if(length2(resolve_vec)>length2(wall_resolution_vec)) 
-							wall_resolution_vec = resolve_vec;
-					}
-					player_pos += wall_resolution_vec;
-				}
-			}
 
-			//Handle ground collision
-			{
-				//Get navmesh face and height of ground directly beneath player
-				vec3 ground_face_vp[3];
-				float ground_y;
-				{
-					get_face(nav_mesh, nav_idx, &ground_face_vp[0], &ground_face_vp[1], &ground_face_vp[2]);
-					// draw_point(ground_face_vp[0], 0.3f, vec4(0.1,0.7,0.2,1));
-					// draw_point(ground_face_vp[1], 0.3f, vec4(0.1,0.7,0.2,1));
-					// draw_point(ground_face_vp[2], 0.3f, vec4(0.1,0.7,0.2,1));
+						//Check support projection onto nav face is in triangle
+						{
+							vec3 support_proj = support_point+vec_to_ground*d;
+							float u,v,w;
+							get_barycentric_coords(support_proj, nav_face_a, nav_face_b, nav_face_c, &u, &v, &w);
+							if(u<0.000001 || v<0.000001 || w<0.000001) continue; //won't collide, early out
+						}
+						// draw_point(nav_face_a, 0.2);
+						// draw_point(nav_face_b, 0.2);
+						// draw_point(nav_face_c, 0.2);
 
-					//Project everything onto xz for barycentric interp
-					vec3 a = vec3(ground_face_vp[0].x, 0, ground_face_vp[0].z);
-					vec3 b = vec3(ground_face_vp[1].x, 0, ground_face_vp[1].z);
-					vec3 c = vec3(ground_face_vp[2].x, 0, ground_face_vp[2].z);
+						if(d<0){ //colliding with navmesh
+							player_pos -= vec_to_ground;
+							player_collider.pos = player_pos;
 
-					float double_area_abc = length(cross(b-a, c-a));
-					vec3 player_xz = vec3(player_pos.x, 0, player_pos.z);
-
-					//Get barycentric coords u,v,w
-					float double_area_pbc = length(cross(b-player_xz, c-player_xz));
-					float double_area_pca = length(cross(c-player_xz, a-player_xz));
-					float double_area_pab = length(cross(a-player_xz, b-player_xz));
-					float u = double_area_pbc/double_area_abc;
-					float v = double_area_pca/double_area_abc;
-					float w = double_area_pab/double_area_abc;
-
-					ground_y = u*ground_face_vp[0].y +v*ground_face_vp[1].y + w*ground_face_vp[2].y;
-					const float bary_epsilon = 0.1f;
-					if(u+v+w > 1 + bary_epsilon) ground_y = player_pos.y - 1;
-				}
-
-				//Get minimum translation vector from ground to player (along ground norm)
-				vec3 ground_mtv;
-				{
-					vec3 ground_norm = normalise(cross(ground_face_vp[1]-ground_face_vp[0], ground_face_vp[2]-ground_face_vp[0]));
-					vec3 vec_to_player = player_pos-ground_face_vp[0];
-					ground_mtv = ground_norm * dot(vec_to_player,ground_norm);
-					draw_vec(player_pos-ground_mtv, ground_mtv, vec4(0.6,0.2,0.5,1));
-				}
-
-				//Check player collision with ground
-				{
-					const float player_autosnap_height = 0.25f;
-					if(player_is_on_ground){
-						if(player_pos.y > ground_y) {
-							if(player_pos.y-ground_y<player_autosnap_height){
-								player_pos.y = ground_y;
+							//Check if it's a ground face
+							if(face_is_ground){
+								if(!player_is_on_ground) player_vel.y = 0.0f; //only kill y velocity if falling
+								hit_ground = true;
 							}
-							else player_is_on_ground = false;
 						}
 					}
-					if(player_pos.y < ground_y) {
-						//push player out of ground along normal
-						player_pos -= ground_mtv;
-						player_vel.y = 0.0f;
-						player_is_on_ground = true;
-						player_is_jumping = false;
-					}
 				}
-
-				if(player_pos.y<-20){ //fall off world check
-					player_pos = vec3(0,1,0);
+				//If we hit any ground faces, player is on ground
+				player_is_on_ground = hit_ground;
+				if(hit_ground){ 
+					player_is_jumping = false;
 				}
 			}
 		}

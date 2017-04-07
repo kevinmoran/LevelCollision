@@ -1,14 +1,14 @@
 #pragma once
 
 //Player data
-vec3 player_pos = vec3(0,2,0);
+vec3 player_pos = vec3(-15,20,0);
 vec3 player_scale = vec3(0.25, 0.5, 0.25);
 mat4 player_M = translate(scale(identity_mat4(), player_scale), player_pos);
 vec3 player_vel = vec3(0,0,0);
 vec4 player_colour = vec4(0.1f, 0.8f, 0.3f, 1.0f);
 bool player_is_on_ground = false;
 bool player_is_jumping = false;
-float player_max_stand_slope = 45;
+float player_max_stand_slope = 60;
 //Physics stuff
 //Thanks to Kyle Pittman for his GDC talk:
 // http://www.gdcvault.com/play/1023559/Math-for-Game-Programmers-Building
@@ -24,38 +24,41 @@ float jump_vel = 2*player_jump_height*player_top_speed/player_jump_dist_to_peak;
 void player_update(double dt){
 
     bool player_moved = false;
-    //Find player's forward and right movement directions
-    vec3 fwd_xz_proj = normalise(vec3(g_camera.fwd.x, 0, g_camera.fwd.z));
-    vec3 rgt_xz_proj = normalise(vec3(g_camera.rgt.x, 0, g_camera.rgt.z));
 
     //WASD Movement (constrained to the x-z plane)
-    if(g_input[MOVE_FORWARD]) {
-        player_vel += fwd_xz_proj*player_acc*dt;
-        player_moved = true;
-    }
-    else if(dot(fwd_xz_proj,player_vel)>0) player_vel -= fwd_xz_proj*player_acc*dt;
+    {
+        //Find player's forward and right movement directions
+        vec3 fwd_xz_proj = normalise(vec3(g_camera.fwd.x, 0, g_camera.fwd.z));
+        vec3 rgt_xz_proj = normalise(vec3(g_camera.rgt.x, 0, g_camera.rgt.z));
+        
+        if(g_input[MOVE_FORWARD]) {
+            player_vel += fwd_xz_proj*player_acc*dt;
+            player_moved = true;
+        }
+        else if(dot(fwd_xz_proj,player_vel)>0) player_vel -= fwd_xz_proj*player_acc*dt;
 
-    if(g_input[MOVE_LEFT]) {
-        player_vel += -rgt_xz_proj*player_acc*dt;
-        player_moved = true;
-    }
-    else if(dot(-rgt_xz_proj,player_vel)>0) player_vel += rgt_xz_proj*player_acc*dt;
+        if(g_input[MOVE_LEFT]) {
+            player_vel += -rgt_xz_proj*player_acc*dt;
+            player_moved = true;
+        }
+        else if(dot(-rgt_xz_proj,player_vel)>0) player_vel += rgt_xz_proj*player_acc*dt;
 
-    if(g_input[MOVE_BACK]) {
-        player_vel += -fwd_xz_proj*player_acc*dt;
-        player_moved = true;			
-    }
-    else if(dot(-fwd_xz_proj,player_vel)>0) player_vel += fwd_xz_proj*player_acc*dt;
+        if(g_input[MOVE_BACK]) {
+            player_vel += -fwd_xz_proj*player_acc*dt;
+            player_moved = true;			
+        }
+        else if(dot(-fwd_xz_proj,player_vel)>0) player_vel += fwd_xz_proj*player_acc*dt;
 
-    if(g_input[MOVE_RIGHT]) {
-        player_vel += rgt_xz_proj*player_acc*dt;
-        player_moved = true;		
+        if(g_input[MOVE_RIGHT]) {
+            player_vel += rgt_xz_proj*player_acc*dt;
+            player_moved = true;		
+        }
+        else if(dot(rgt_xz_proj,player_vel)>0) player_vel -= rgt_xz_proj*player_acc*dt;
+        // NOTE about the else statements above: Checks if we aren't pressing a button 
+        // but have velocity in that direction, if so slows us down faster w/ subtraction
+        // This improves responsiveness and tightens up the feel of moving
+        // Mult by friction_factor is good to kill speed when idle but feels drifty while moving
     }
-    else if(dot(rgt_xz_proj,player_vel)>0) player_vel -= rgt_xz_proj*player_acc*dt;
-    // NOTE about the else statements above: Checks if we aren't pressing a button 
-    // but have velocity in that direction, if so slows us down faster w/ subtraction
-    // This improves responsiveness and tightens up the feel of moving
-    // Mult by friction_factor is good to kill speed when idle but feels drifty while moving
 
     if(player_is_on_ground){
         //Clamp player speed
@@ -96,11 +99,6 @@ void player_update(double dt){
 
     //Update player position
     player_pos += player_vel*dt;
-
-    // if(player_pos.x < -15) player_pos.x = -15;
-    // if(player_pos.x >  15) player_pos.x =  15;
-    // if(player_pos.z < -15) player_pos.z = -15;
-    // if(player_pos.z >  15) player_pos.z =  15;
 
     //Update matrices
     player_M = translate(scale(identity_mat4(), player_scale), player_pos);

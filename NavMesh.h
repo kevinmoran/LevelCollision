@@ -124,50 +124,53 @@ bool get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c, vec3* result){
     return false;
 }
 
-//Find index of triangle on navmesh below pos
-//Returns true if there's ground below you, false if not
-//Uses previous result (index param) and connectivity info for speed!
-bool find_face_below_pos(const NavMesh &n, vec3 pos, int* index){
+//Find index of triangle on navmesh closest to pos
+//Uses seeded index and connectivity info for speed!
+void find_closest_face(const NavMesh &n, vec3 pos, int* index){
     assert(*index<n.num_faces);
-    vec3 closest_face;
+
+    //Get vector from pos to navmesh face at seeded index
+    vec3 vec_to_closest_face;
     {
         vec3 curr_tri[3];
         get_face(n, *index, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-        get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &closest_face);
+        get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &vec_to_closest_face);
     }
 
+    //Every iteration we jump to a neighbouring face which is closer to pos until none are closer
+    //Should realistically need only 1 or 2 iterations since player won't move much per frame
     for(int iterations=0; iterations<32; iterations++)
     {
-        vec3 closest_neighbour = vec3(999,999,999);
+        vec3 vec_to_closest_neighbour = vec3(999,999,999);
         int closest_neighbour_idx = -1;
+
+        //Check distance to all neighbours of current face, store closest
 		for(int i=0; i<n.faces[*index].num_neighbours; i++)
         {
-            uint16_t neigh_idx = n.faces[*index].neighbours[i];
+            //Get neighbour face
             vec3 curr_tri[3];
+            uint16_t neigh_idx = n.faces[*index].neighbours[i];
             get_face(n, neigh_idx, &curr_tri[0], &curr_tri[1], &curr_tri[2]);
-    
-            //Wall check
-            vec3 ground_norm = normalise(cross(curr_tri[1]-curr_tri[0], curr_tri[2]-curr_tri[0]));
-            float ground_slope = acos(dot(ground_norm, vec3(0,1,0)));
-            //TODO: Remove hardcoded max_slope angle
-            if(ground_slope>DEG2RAD(60)){ //too steep to stand on
-                continue;
-            }
-            vec3 v;
-            get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &v);
-            if(length2_xz(v) < length2_xz(closest_neighbour)){
-                closest_neighbour = v;
+
+            //Get vector from pos to neighbour
+            vec3 vec_to_curr_face;
+            get_vec_to_triangle(pos, curr_tri[0], curr_tri[1], curr_tri[2], &vec_to_curr_face);
+
+            //If this neighbour is the closest to pos so far, save it
+            if(length2(vec_to_curr_face) < length2(vec_to_closest_neighbour)){
+                vec_to_closest_neighbour = vec_to_curr_face;
                 closest_neighbour_idx = neigh_idx;
             }
         }
-        if(length2_xz(closest_neighbour)<length2_xz(closest_face)){
+        //If one of the neighbours is closer than current face, make it current face
+        if(length2(vec_to_closest_neighbour)<length2(vec_to_closest_face)){
             *index = closest_neighbour_idx;
-            closest_face = closest_neighbour;
-            if(length2_xz(closest_neighbour)<0.00001) return true;
+            vec_to_closest_face = vec_to_closest_neighbour;
         }
-        else return false;
+        //Otherwise we can't get closer to pos, return
+        else return;
     }
-    return false;
+    printf("WARNING: find_closest_face ran out of iterations\n");
 }
 
 //Brute force check all triangles in navmesh, return closest one to pos
@@ -186,6 +189,23 @@ int find_closest_face_SLOW(const NavMesh &n, vec3 pos){
         }
     }
     return closest_face;
+}
+
+//Returns barycentric coords u,v,w. Assumes p lies on the plane of triangle abc
+void get_barycentric_coords(vec3 p, vec3 a, vec3 b, vec3 c, float* u, float* v, float* w){
+    vec3 norm = cross(b-a, c-a);
+    float double_area_abc = length(norm);
+
+    //Get barycentric coords u,v,w
+    vec3 u_cross = cross(b-p,c-p);
+    vec3 v_cross = cross(c-p,a-p);
+    vec3 w_cross = cross(a-p,b-p);
+    *u = length(u_cross)/double_area_abc;
+    *v = length(v_cross)/double_area_abc;
+    *w = length(w_cross)/double_area_abc;
+    if(dot(u_cross,norm)<0) *u *= -1;
+    if(dot(v_cross,norm)<0) *v *= -1;
+    if(dot(w_cross,norm)<0) *w *= -1;
 }
 
 void clear_navmesh(NavMesh* n){
