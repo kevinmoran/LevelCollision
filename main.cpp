@@ -227,7 +227,7 @@ int main(){
 						vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
 						vec3 support_point = player_collider.support(-nav_face_norm);
 						float d = dot(support_point-nav_face_a,nav_face_norm);
-						vec3 vec_to_ground = nav_face_norm*(d);
+						vec3 ground_to_player_vec = nav_face_norm*(d);
 
 						bool face_is_ground = true; //to distinguish between wall and ground collisions
 						{
@@ -237,7 +237,7 @@ int main(){
 
 						//Check support projection onto nav face is in triangle
 						{
-							vec3 support_proj = support_point+vec_to_ground*d;
+							vec3 support_proj = support_point+ground_to_player_vec*d;
 							float u,v,w;
 							get_barycentric_coords(support_proj, nav_face_a, nav_face_b, nav_face_c, &u, &v, &w);
 							if(u<0.000001 || v<0.000001 || w<0.000001) continue; //won't collide, early out
@@ -247,7 +247,7 @@ int main(){
 						// draw_point(nav_face_c, 0.2);
 
 						if(d<0){ //colliding with navmesh
-							player_pos -= vec_to_ground;
+							player_pos -= ground_to_player_vec;
 							player_collider.pos = player_pos;
 
 							//Check if it's a ground face
