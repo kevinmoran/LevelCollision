@@ -6,8 +6,8 @@
 #include <string.h>
 
 GLFWwindow* window = NULL;
-int gl_width = 400;
-int gl_height = 300;
+int gl_width = 800;
+int gl_height = 600;
 float gl_aspect_ratio = (float)gl_width/gl_height;
 bool gl_fullscreen = false;
 
@@ -170,6 +170,17 @@ int main(){
 			}
 			else slash_was_pressed = false;
 
+			//R to reset
+			static bool r_was_pressed = false;
+			if(glfwGetKey(window, GLFW_KEY_R)) {
+				if(!r_was_pressed) {
+					player_pos = vec3(0,2,0);
+					player_vel = vec3(0,0,0);
+				 }
+				r_was_pressed = true;
+			}
+			else r_was_pressed = false;
+
 			//Ctrl/Command-F to toggle fullscreen
 			//Note: window_resize_callback takes care of resizing viewport/recalculating P matrix
 			static bool F_was_pressed = false;
@@ -246,7 +257,7 @@ int main(){
 						// draw_point(nav_face_b, 0.2);
 						// draw_point(nav_face_c, 0.2);
 
-						if(d<0){ //colliding with navmesh
+						if(d<0 && dot(player_collider.support(nav_face_norm)-nav_face_a,nav_face_norm)>0 ){ //colliding with navmesh
 							player_pos -= ground_to_player_vec;
 							player_collider.pos = player_pos;
 

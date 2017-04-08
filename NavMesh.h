@@ -163,7 +163,8 @@ void find_closest_face(const NavMesh &n, vec3 pos, int* index){
             }
         }
         //If one of the neighbours is closer than current face, make it current face
-        if(length2(vec_to_closest_neighbour)<length2(vec_to_closest_face)){
+        const float bias = 0.00001;
+        if(length2(vec_to_closest_neighbour)<length2(vec_to_closest_face)-bias){
             *index = closest_neighbour_idx;
             vec_to_closest_face = vec_to_closest_neighbour;
         }
