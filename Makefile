@@ -29,7 +29,7 @@ LIB_DIR_MAC = libs/osx_64/
 LIBS_MAC = $(LIB_DIR_MAC)libglfw3.a
 
 #System libs/Frameworks to link
-WIN_SYS_LIBS = -lOpenGL32 -L ./ -lm -lgdi32
+WIN_SYS_LIBS = -lOpenGL32 -lgdi32
 FRAMEWORKS = -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo
 
 SRC = main.cpp
