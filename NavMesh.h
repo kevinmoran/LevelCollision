@@ -73,7 +73,7 @@ void get_face(const NavMesh &n, int index, vec3* p0, vec3* p1, vec3* p2){
 }
 
 //Returns vector result from point p to closest point on triangle abc
-//Returns a bool if p's projection onto the abc's plane lies within the triangle
+//Returns true if p's projection onto the abc's plane lies within the triangle
 bool get_vec_to_triangle(vec3 p, vec3 a, vec3 b, vec3 c, vec3* result){
     vec3 norm = cross(b-a, c-a);
     float double_area_abc = length(norm);

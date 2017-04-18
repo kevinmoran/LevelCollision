@@ -240,12 +240,6 @@ int main(){
 						float d = dot(support_point-nav_face_a,nav_face_norm);
 						vec3 ground_to_player_vec = nav_face_norm*(d);
 
-						bool face_is_ground = true; //to distinguish between wall and ground collisions
-						{
-							float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
-							if(face_slope>player_max_stand_slope) face_is_ground = false;
-						}
-
 						//Check support projection onto nav face is in triangle
 						{
 							vec3 support_proj = support_point+ground_to_player_vec*d;
@@ -256,6 +250,12 @@ int main(){
 						// draw_point(nav_face_a, 0.2);
 						// draw_point(nav_face_b, 0.2);
 						// draw_point(nav_face_c, 0.2);
+
+						bool face_is_ground = true; //to distinguish between wall and ground collisions
+						{
+							float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
+							if(face_slope>player_max_stand_slope) face_is_ground = false;
+						}
 
 						if(d<0 && dot(player_collider.support(nav_face_norm)-nav_face_a,nav_face_norm)>0 ){ //colliding with navmesh
 							player_pos -= ground_to_player_vec;
