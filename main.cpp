@@ -206,7 +206,7 @@ int main(){
 
 		//Move player
 		if(!freecam_mode) player_update(dt);
-		player_collider.pos= player_pos;
+		player_collider.pos = player_pos;
 		player_collider.matRS = player_M;
 		player_collider.matRS_inverse = inverse(player_M);
 
@@ -220,51 +220,7 @@ int main(){
 
 			//Narrow phase
 			//Check collision between player and all candidate faces
-			{
-				int num_neighbours = nav_mesh.faces[closest_face_idx].num_neighbours;
-				bool hit_ground = false;
-				for(int i=-1; i<num_neighbours; i++){
-					//Get current face
-					vec3 nav_face_a, nav_face_b, nav_face_c;
-					{
-						int nav_idx;
-						if(i<0) nav_idx = closest_face_idx; //ugly but whatever
-						else nav_idx = nav_mesh.faces[closest_face_idx].neighbours[i];
-						get_face(nav_mesh, nav_idx, &nav_face_a, &nav_face_b, &nav_face_c);
-					}
-					vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
-
-					TriangleCollider triangle_collider;
-					triangle_collider.points[0] = nav_face_a;
-					triangle_collider.points[1] = nav_face_b;
-					triangle_collider.points[2] = nav_face_c;
-					triangle_collider.normal = nav_face_norm;
-
-					//Check player collision with current face
-					vec3 support_point = player_collider.support(-nav_face_norm);
-					float d = dot(support_point-nav_face_a,nav_face_norm);
-					vec3 ground_to_player_vec = nav_face_norm*(d);
-
-					if(!gjk(&player_collider, &triangle_collider)) continue;
-
-					bool face_is_ground = true;
-					float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
-					if(face_slope>player_max_stand_slope) face_is_ground = false;
-
-					player_collider.pos -= ground_to_player_vec;
-
-					//Check if it's a ground face
-					if(face_is_ground){
-						if(!player_is_on_ground) player_vel.y = 0.0f; //only kill y velocity if falling
-						hit_ground = true;
-					}
-				}
-				//If we hit any ground faces, player is on ground
-				player_is_on_ground = hit_ground;
-				if(hit_ground){ 
-					player_is_jumping = false;
-				}
-			}
+			collide_player_ground(nav_mesh, &player_collider, closest_face_idx);
 		}
 		player_pos = player_collider.pos;
 		player_M = translate(scale(identity_mat4(), player_scale), player_pos);

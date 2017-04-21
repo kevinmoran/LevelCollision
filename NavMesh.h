@@ -174,6 +174,52 @@ void find_closest_face(const NavMesh &n, vec3 pos, int* index){
     printf("WARNING: find_closest_face ran out of iterations\n");
 }
 
+void collide_player_ground(const NavMesh &nav_mesh, Capsule* player_collider, int closest_face_idx) {
+    int num_neighbours = nav_mesh.faces[closest_face_idx].num_neighbours;
+    bool hit_ground = false;
+    for(int i=-1; i<num_neighbours; i++){
+        //Get current face
+        vec3 nav_face_a, nav_face_b, nav_face_c;
+        {
+            int nav_idx;
+            if(i<0) nav_idx = closest_face_idx; //ugly but whatever
+            else nav_idx = nav_mesh.faces[closest_face_idx].neighbours[i];
+            get_face(nav_mesh, nav_idx, &nav_face_a, &nav_face_b, &nav_face_c);
+        }
+        vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
+
+        TriangleCollider triangle_collider;
+        triangle_collider.points[0] = nav_face_a;
+        triangle_collider.points[1] = nav_face_b;
+        triangle_collider.points[2] = nav_face_c;
+        triangle_collider.normal = nav_face_norm;
+
+        //Check player collision with current face
+        vec3 support_point = player_collider->support(-nav_face_norm);
+        float d = dot(support_point-nav_face_a,nav_face_norm);
+        vec3 ground_to_player_vec = nav_face_norm*(d);
+
+        if(!gjk(player_collider, &triangle_collider)) continue;
+
+        bool face_is_ground = true;
+        float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
+        if(face_slope>player_max_stand_slope) face_is_ground = false;
+
+        player_collider->pos -= ground_to_player_vec;
+
+        //Check if it's a ground face
+        if(face_is_ground){
+            if(!player_is_on_ground) player_vel.y = 0.0f; //only kill y velocity if falling
+            hit_ground = true;
+        }
+    }
+    //If we hit any ground faces, player is on ground
+    player_is_on_ground = hit_ground;
+    if(hit_ground){ 
+        player_is_jumping = false;
+    }
+}
+
 //Brute force check all triangles in navmesh, return closest one to pos
 int find_closest_face_SLOW(const NavMesh &n, vec3 pos){
     float min_dist = 999;
@@ -190,23 +236,6 @@ int find_closest_face_SLOW(const NavMesh &n, vec3 pos){
         }
     }
     return closest_face;
-}
-
-//Returns barycentric coords u,v,w. Assumes p lies on the plane of triangle abc
-void get_barycentric_coords(vec3 p, vec3 a, vec3 b, vec3 c, float* u, float* v, float* w){
-    vec3 norm = cross(b-a, c-a);
-    float double_area_abc = length(norm);
-
-    //Get barycentric coords u,v,w
-    vec3 u_cross = cross(b-p,c-p);
-    vec3 v_cross = cross(c-p,a-p);
-    vec3 w_cross = cross(a-p,b-p);
-    *u = length(u_cross)/double_area_abc;
-    *v = length(v_cross)/double_area_abc;
-    *w = length(w_cross)/double_area_abc;
-    if(dot(u_cross,norm)<0) *u *= -1;
-    if(dot(v_cross,norm)<0) *v *= -1;
-    if(dot(w_cross,norm)<0) *w *= -1;
 }
 
 void clear_navmesh(NavMesh* n){
