@@ -6,8 +6,8 @@
 #include <string.h>
 
 GLFWwindow* window = NULL;
-int gl_width = 800;
-int gl_height = 600;
+int gl_width = 400;
+int gl_height = 300;
 float gl_aspect_ratio = (float)gl_width/gl_height;
 bool gl_fullscreen = false;
 
@@ -19,7 +19,7 @@ bool gl_fullscreen = false;
 #include "Shader.h"
 #include "DebugDrawing.h"
 #include "Player.h"
-#include "Collider.h"
+#include "GJK.h"
 #include "NavMesh.h"
 
 int main(){
@@ -210,7 +210,7 @@ int main(){
 		player_collider.matRS = player_M;
 		player_collider.matRS_inverse = inverse(player_M);
 
-		//Do collision with navmesh
+		//Do collision with ground
 		{
 			static int closest_face_idx = find_closest_face_SLOW(nav_mesh, player_pos);
 			
@@ -232,41 +232,31 @@ int main(){
 						else nav_idx = nav_mesh.faces[closest_face_idx].neighbours[i];
 						get_face(nav_mesh, nav_idx, &nav_face_a, &nav_face_b, &nav_face_c);
 					}
+					vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
+
+					TriangleCollider triangle_collider;
+					triangle_collider.points[0] = nav_face_a;
+					triangle_collider.points[1] = nav_face_b;
+					triangle_collider.points[2] = nav_face_c;
+					triangle_collider.normal = nav_face_norm;
 
 					//Check player collision with current face
-					{
-						vec3 nav_face_norm = normalise(cross(nav_face_b-nav_face_a, nav_face_c-nav_face_a));
-						vec3 support_point = player_collider.support(-nav_face_norm);
-						float d = dot(support_point-nav_face_a,nav_face_norm);
-						vec3 ground_to_player_vec = nav_face_norm*(d);
+					vec3 support_point = player_collider.support(-nav_face_norm);
+					float d = dot(support_point-nav_face_a,nav_face_norm);
+					vec3 ground_to_player_vec = nav_face_norm*(d);
 
-						//Check support projection onto nav face is in triangle
-						{
-							vec3 support_proj = support_point+ground_to_player_vec*d;
-							float u,v,w;
-							get_barycentric_coords(support_proj, nav_face_a, nav_face_b, nav_face_c, &u, &v, &w);
-							if(u<0.000001 || v<0.000001 || w<0.000001) continue; //won't collide, early out
-						}
-						// draw_point(nav_face_a, 0.2);
-						// draw_point(nav_face_b, 0.2);
-						// draw_point(nav_face_c, 0.2);
+					if(!gjk(&player_collider, &triangle_collider)) continue;
 
-						bool face_is_ground = true; //to distinguish between wall and ground collisions
-						{
-							float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
-							if(face_slope>player_max_stand_slope) face_is_ground = false;
-						}
+					bool face_is_ground = true;
+					float face_slope = RAD2DEG(acos(dot(nav_face_norm, vec3(0,1,0))));
+					if(face_slope>player_max_stand_slope) face_is_ground = false;
 
-						if(d<0 && dot(player_collider.support(nav_face_norm)-nav_face_a,nav_face_norm)>0 ){ //colliding with navmesh
-							player_pos -= ground_to_player_vec;
-							player_collider.pos = player_pos;
+					player_collider.pos -= ground_to_player_vec;
 
-							//Check if it's a ground face
-							if(face_is_ground){
-								if(!player_is_on_ground) player_vel.y = 0.0f; //only kill y velocity if falling
-								hit_ground = true;
-							}
-						}
+					//Check if it's a ground face
+					if(face_is_ground){
+						if(!player_is_on_ground) player_vel.y = 0.0f; //only kill y velocity if falling
+						hit_ground = true;
 					}
 				}
 				//If we hit any ground faces, player is on ground
@@ -276,8 +266,10 @@ int main(){
 				}
 			}
 		}
+		player_pos = player_collider.pos;
 		player_M = translate(scale(identity_mat4(), player_scale), player_pos);
 
+		//Update camera
 		if(freecam_mode)g_camera.update_debug(dt);
 		else g_camera.update_player(player_pos, dt);
 
