@@ -3,6 +3,8 @@
 // #include "Input.h"
 
 bool cam_mouse_controls = false;
+const float near_plane = 0.1f;
+const float far_plane = 300.0f;
 
 struct Camera3D {
     vec3 pos;
@@ -29,7 +31,7 @@ void Camera3D::init(){
 	move_speed = 10;
 	turn_speed = 100;
 	V = look_at(pos, pos+fwd, up);
-	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, 0.1f, 100.0f);
+	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, near_plane, far_plane);
 
     if(cam_mouse_controls) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
 }
@@ -37,7 +39,7 @@ void Camera3D::init(){
 void Camera3D::init(vec3 cam_pos){
     pos = cam_pos;
     V = look_at(cam_pos, cam_pos+vec3(0,0,-1), vec3(0,1,0));
-	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, 0.1f, 100.0f);
+	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, near_plane, far_plane);
 	rgt = vec3(V.m[0], V.m[4], V.m[8]);
 	up  = vec3(V.m[1], V.m[5], V.m[9]);
     fwd = vec3(-V.m[2], -V.m[6], -V.m[10]);
@@ -52,7 +54,7 @@ void Camera3D::init(vec3 cam_pos){
 void Camera3D::init(vec3 cam_pos, vec3 target_pos){
     pos = cam_pos;
     V = look_at(cam_pos, target_pos, vec3(0,1,0));
-	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, 0.1f, 100.0f);
+	P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, near_plane, far_plane);
 	rgt = vec3(V.m[0], V.m[4], V.m[8]);
 	up  = vec3(V.m[1], V.m[5], V.m[9]);
     fwd = vec3(-V.m[2], -V.m[6], -V.m[10]);
@@ -160,7 +162,7 @@ void window_resize_callback(GLFWwindow* window, int width, int height){
     gl_width = width;
     gl_height = height;
     gl_aspect_ratio = (float)gl_width/gl_height;
-    g_camera.P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, 0.1f, 100.0f);
+    g_camera.P = perspective(90/gl_aspect_ratio, gl_aspect_ratio, near_plane, far_plane);
     int fb_w, fb_h;
 	glfwGetFramebufferSize(window,&fb_w,&fb_h);
 	glViewport(0,0,fb_w,fb_h);
