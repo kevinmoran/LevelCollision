@@ -174,16 +174,20 @@ void find_closest_face(const LevelCollider &level, vec3 pos, int* index){
     printf("WARNING: find_closest_face ran out of iterations\n");
 }
 
-void collide_player_ground(const LevelCollider &level, Capsule* player_collider, int closest_face_idx) {
-    int num_neighbours = level.faces[closest_face_idx].num_neighbours;
+void collide_player_ground(const LevelCollider &level, Capsule* player_collider, int* closest_face_idx) {   
+    //Broad phase
+    find_closest_face(level, player_pos, closest_face_idx); 
+
+    //Narrow phase
+    int num_neighbours = level.faces[*closest_face_idx].num_neighbours;
     bool hit_ground = false;
     for(int i=-1; i<num_neighbours; i++){
         //Get current face
         vec3 level_face_a, level_face_b, level_face_c;
         {
             int level_idx;
-            if(i<0) level_idx = closest_face_idx; //ugly but whatever
-            else level_idx = level.faces[closest_face_idx].neighbours[i];
+            if(i<0) level_idx = *closest_face_idx; //ugly but whatever
+            else level_idx = level.faces[*closest_face_idx].neighbours[i];
             get_face(level, level_idx, &level_face_a, &level_face_b, &level_face_c);
         }
         vec3 level_face_norm = normalise(cross(level_face_b-level_face_a, level_face_c-level_face_a));

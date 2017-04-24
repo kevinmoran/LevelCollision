@@ -211,17 +211,9 @@ int main(){
 		player_collider.matRS_inverse = inverse(player_M);
 
 		//Do collision with ground
-		{
-			static int closest_face_idx = find_closest_face_SLOW(level, player_pos);
-			
-			//Broad phase
-			//Get a subset of nav faces to check for collision with player based on distance
-			find_closest_face(level, player_pos, &closest_face_idx);
+		static int closest_face_idx = find_closest_face_SLOW(level, player_pos);
+		collide_player_ground(level, &player_collider, &closest_face_idx);
 
-			//Narrow phase
-			//Check collision between player and all candidate faces
-			collide_player_ground(level, &player_collider, closest_face_idx);
-		}
 		player_pos = player_collider.pos;
 		player_M = translate(scale(identity_mat4(), player_scale), player_pos);
 
