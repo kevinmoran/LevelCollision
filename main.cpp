@@ -20,10 +20,10 @@ bool gl_fullscreen = false;
 #include "DebugDrawing.h"
 #include "Player.h"
 #include "GJK.h"
-#include "NavMesh.h"
+#include "Level.h"
 
 int main(){
-	if(!init_gl(window, "Navmesh", gl_width, gl_height)){ return 1; }
+	if(!init_gl(window, "Level Collision", gl_width, gl_height)){ return 1; }
 
 	//Load player mesh
 	GLuint player_vao;
@@ -67,7 +67,7 @@ int main(){
 	//Load ground mesh
 	GLuint ground_vao;
 	unsigned int ground_num_indices = 0;
-	NavMesh nav_mesh;
+	LevelCollider level;
 	{
 		float* vp = NULL;
 		float* vn = NULL;
@@ -76,7 +76,7 @@ int main(){
 		unsigned int num_verts = 0;
 		load_obj_indexed("ground.obj", &vp, &vt, &vn, &indices, &num_verts, &ground_num_indices);
 
-		nav_mesh = init_navmesh(vp, indices, num_verts, ground_num_indices);
+		level = init_level(vp, indices, num_verts, ground_num_indices);
 
 		glGenVertexArrays(1, &ground_vao);
 		glBindVertexArray(ground_vao);
@@ -212,15 +212,15 @@ int main(){
 
 		//Do collision with ground
 		{
-			static int closest_face_idx = find_closest_face_SLOW(nav_mesh, player_pos);
+			static int closest_face_idx = find_closest_face_SLOW(level, player_pos);
 			
 			//Broad phase
 			//Get a subset of nav faces to check for collision with player based on distance
-			find_closest_face(nav_mesh, player_pos, &closest_face_idx);
+			find_closest_face(level, player_pos, &closest_face_idx);
 
 			//Narrow phase
 			//Check collision between player and all candidate faces
-			collide_player_ground(nav_mesh, &player_collider, closest_face_idx);
+			collide_player_ground(level, &player_collider, closest_face_idx);
 		}
 		player_pos = player_collider.pos;
 		player_M = translate(scale(identity_mat4(), player_scale), player_pos);

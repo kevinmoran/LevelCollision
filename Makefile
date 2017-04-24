@@ -2,7 +2,7 @@
 #for Single Translation Unit Builds
 #i.e. assumes only source file is main.cpp
 
-BIN = navmesh
+BIN = levelcollision
 BUILD_DIR = 
 
 CXX = g++

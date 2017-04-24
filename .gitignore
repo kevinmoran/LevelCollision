@@ -8,4 +8,4 @@
 .vscode/
 *.dSYM/
 *.blend1
-navmesh
+levelcollision
