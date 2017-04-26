@@ -93,18 +93,6 @@ void collide_player_ground(const LevelCollider &level, Capsule* player_collider)
         vec3 level_face_a, level_face_b, level_face_c;
         get_face(level, i, &level_face_a, &level_face_b, &level_face_c);
 
-        //Calculate stuff
-        vec3 level_face_norm = normalise(cross(level_face_b-level_face_a, level_face_c-level_face_a));
-        vec3 support_point = player_collider->support(-level_face_norm);
-        float d = dot(support_point-level_face_a,level_face_norm);
-        vec3 ground_to_player_vec = level_face_norm*(d);
-
-        TriangleCollider triangle_collider;
-        triangle_collider.points[0] = level_face_a;
-        triangle_collider.points[1] = level_face_b;
-        triangle_collider.points[2] = level_face_c;
-        triangle_collider.normal = level_face_norm;
-
         //Broad phase
         {
             //Get face's bounding sphere
@@ -115,6 +103,19 @@ void collide_player_ground(const LevelCollider &level, Capsule* player_collider)
             vec3 player_to_face_vec = player_sphere_center-face_sphere_center;
             if(length(player_to_face_vec)>face_sphere_radius + player_sphere_radius) continue;
         }
+
+        //Calculate stuff
+        TriangleCollider triangle_collider; //Doesn't break collision
+        vec3 level_face_norm = normalise(cross(level_face_b-level_face_a, level_face_c-level_face_a));
+        vec3 support_point = player_collider->support(-level_face_norm);
+        float player_dist_along_norm = dot(support_point-level_face_a,level_face_norm);
+        vec3 ground_to_player_vec = level_face_norm*player_dist_along_norm;
+
+        // TriangleCollider triangle_collider; //breaks collision
+        triangle_collider.points[0] = level_face_a;
+        triangle_collider.points[1] = level_face_b;
+        triangle_collider.points[2] = level_face_c;
+        triangle_collider.normal = level_face_norm;
 
         //Narrow phase using GJK
         if(!gjk(player_collider, &triangle_collider)) continue;
