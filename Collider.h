@@ -53,7 +53,7 @@ struct TriangleCollider : Collider {
         }
 
         //fake some depth behind triangle so we have volume
-        if(dot(dir, normal)<0) furthest_point-= normal*0.1; 
+        if(dot(dir, normal)<0) furthest_point-= normal*0.01; 
 
         return furthest_point;
     }

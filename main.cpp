@@ -104,7 +104,7 @@ int main(){
 		glGenBuffers(1, &index_vbo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, ground_num_indices*sizeof(unsigned short), indices, GL_STATIC_DRAW);
-		free(indices);
+		// free(indices);
 	}
 
 	//Player collision mesh
@@ -118,8 +118,8 @@ int main(){
 		player_collider.matRS_inverse = inverse(player_M);
 	}
 
-    g_camera.init(vec3(0,2,35), vec3(0,-5,0));
-
+	g_camera.init(vec3(0,2,35), vec3(0,-5,0));
+	
 	init_debug_draw();
 
     //Load shaders
@@ -211,9 +211,7 @@ int main(){
 		player_collider.matRS_inverse = inverse(player_M);
 
 		//Do collision with ground
-		static int closest_face_idx = find_closest_face_SLOW(level, player_pos);
-		collide_player_ground(level, &player_collider, &closest_face_idx);
-
+		collide_player_ground(level, &player_collider);
 		player_pos = player_collider.pos;
 		player_M = translate(scale(identity_mat4(), player_scale), player_pos);
 
