@@ -30,7 +30,7 @@ void init_debug_draw(){
 	glBindBuffer(GL_ARRAY_BUFFER, points_vbo);
 	glVertexAttribPointer(VP_ATTRIB_LOC, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    debug_shader = init_shader("MVP.vert", "uniform_colour.frag");
+    debug_shader = init_shader("MVP_depth_bias.vert", "uniform_colour.frag");
 }
 
 void draw_point(vec3 pos, float size, vec4 colour){

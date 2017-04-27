@@ -181,6 +181,17 @@ int main(){
 			}
 			else r_was_pressed = false;
 
+			//T to teleport player
+			static bool t_was_pressed = false;
+			if(glfwGetKey(window, GLFW_KEY_T)) {
+				if(!t_was_pressed) {
+					player_pos = g_camera.pos + g_camera.fwd*5 - g_camera.up*2;
+					player_vel = vec3(0,0,0);
+				 }
+				t_was_pressed = true;
+			}
+			else t_was_pressed = false;
+
 			//Ctrl/Command-F to toggle fullscreen
 			//Note: window_resize_callback takes care of resizing viewport/recalculating P matrix
 			static bool F_was_pressed = false;
@@ -237,8 +248,9 @@ int main(){
 
 		if(draw_wireframe){
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glUseProgram(debug_shader.id);
 			glUniform4fv(colour_loc, 1, vec4(0,0,0,1).v);
-			glUniformMatrix4fv(basic_shader.M_loc, 1, GL_FALSE, translate(identity_mat4(), vec3(0,0.1f,0)).m);
+			glUniformMatrix4fv(basic_shader.M_loc, 1, GL_FALSE, identity_mat4().m);
 			glDrawElements(GL_TRIANGLES, ground_num_indices, GL_UNSIGNED_SHORT, 0);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
