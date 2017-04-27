@@ -250,7 +250,9 @@ int main(){
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glUseProgram(debug_shader.id);
 			glUniform4fv(colour_loc, 1, vec4(0,0,0,1).v);
-			glUniformMatrix4fv(basic_shader.M_loc, 1, GL_FALSE, identity_mat4().m);
+			glUniformMatrix4fv(debug_shader.M_loc, 1, GL_FALSE, identity_mat4().m);
+			glUniformMatrix4fv(debug_shader.V_loc, 1, GL_FALSE, g_camera.V.m);
+			glUniformMatrix4fv(debug_shader.P_loc, 1, GL_FALSE, g_camera.P.m);
 			glDrawElements(GL_TRIANGLES, ground_num_indices, GL_UNSIGNED_SHORT, 0);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
