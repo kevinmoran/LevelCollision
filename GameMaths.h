@@ -875,7 +875,19 @@ inline mat4 rotate_align(const vec3& u1, const vec3& u2){
     float k = 1.0f/(1.0f+cos_a);
 
 	if(cmpf(cos_a,-1)) //vectors are opposite
-		return scale(identity_mat4(),-1);
+	{
+		//Rotate 180 degrees around axis u1 is least aligned with
+		float dot_x = dot(u1,vec3(1,0,0));
+		float dot_y = dot(u1,vec3(0,1,0));
+		float dot_z = dot(u1,vec3(0,0,1));
+		
+		if(dot_y<dot_x){
+			if(dot_z<dot_y) return rotate_z_deg(identity_mat4(), 180);
+			else return rotate_y_deg(identity_mat4(), 180); 
+		}
+		else if(dot_z<dot_x) return rotate_z_deg(identity_mat4(), 180);
+		else return rotate_x_deg(identity_mat4(), 180);
+	}
 
 	return mat4(
 		axis.v[0]*axis.v[0]*k + cos_a,
