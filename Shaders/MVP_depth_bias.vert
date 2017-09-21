@@ -11,5 +11,5 @@ out vec3 normal;
 void main () {
 	tex_coords = vt;
 	normal = mat3(M)*vn;
-	gl_Position = P*V*M*vec4(vp, 1.0) - vec4(0.0,0.0,0.01,0.0);
+	gl_Position = P*V*M*vec4(vp, 1.0) - vec4(0.0,0.0,0.005,0.0);
 }

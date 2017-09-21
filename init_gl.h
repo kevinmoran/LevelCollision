@@ -18,7 +18,7 @@ bool init_gl(GLFWwindow* &window, const char* title, int window_width, int windo
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	#endif
-	
+
 	window = glfwCreateWindow(window_width, window_height, title, NULL, NULL);
 	if(!window) {
 		fprintf(stderr, "ERROR: could not open window with GLFW3\n");
@@ -37,7 +37,7 @@ bool init_gl(GLFWwindow* &window, const char* title, int window_width, int windo
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetCursorEnterCallback(window, cursor_enter_callback);
-	
+	glfwSwapInterval(1);
 	//Load OpenGL functions
 	if(!gl_lite_init()){
 		printf("Error in gl_lite_init\n");

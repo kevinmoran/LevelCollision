@@ -6,8 +6,8 @@
 #include <string.h>
 
 GLFWwindow* window = NULL;
-int gl_width = 400;
-int gl_height = 300;
+int gl_width = 1080;
+int gl_height = 720;
 float gl_aspect_ratio = (float)gl_width/gl_height;
 bool gl_fullscreen = false;
 
